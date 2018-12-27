@@ -4,14 +4,14 @@ A bash script that uses the BinMerge python script to batch convert multi-track 
 In order for this script to work correctly, each game must be in its own directory.  The script supports spaces and special characters in folders and file names. For example:
 ```
 /home/mtrivs/MyGames/
-|-- Some Game (USA)
-      |-- Some Game (USA) (Track 1).bin
-      |-- Some Game (USA) (Track 2).bin
-      |-- Some Game (USA).cue
-|-- Another Game (USA) (en, es, fr)
-      |-- Another Game (USA) (en, es, fr) (Track 1).bin
-      |-- Another Game (USA) (en, es, fr) (Track 2).bin
-      |-- Another Game (USA) (en, es, fr).cue
+            |-- Some Game (USA)
+            |      |-- Some Game (USA) (Track 1).bin
+            |      |-- Some Game (USA) (Track 2).bin
+            |      |-- Some Game (USA).cue
+            |-- Another Game (USA) (en, es, fr)
+            |      |-- Another Game (USA) (en, es, fr) (Track 1).bin
+            |      |-- Another Game (USA) (en, es, fr) (Track 2).bin
+            |      |-- Another Game (USA) (en, es, fr).cue
 ```
 
 # What does MergeHelper do?
