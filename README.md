@@ -1,5 +1,5 @@
 # MergeHelper
-A bash script that uses the BinMerge python script to batch convert multi-track bin files to a single bin/cue pair.   This is commonly needed for PSX disc images with multiple tracks and works great for ReDump sets. 
+A bash script that uses the BinMerge python script to batch convert multi-track bin files to a single BIN/CUE pair.   This is commonly needed for PSX disc images with multiple tracks and works great for ReDump sets. 
 
 In order for this script to work correctly, each game must be in its own directory.  The script supports spaces and special characters in folders and file names. For example:
 ```
