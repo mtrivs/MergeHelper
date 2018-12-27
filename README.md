@@ -19,7 +19,8 @@ This script will search a directory and detect sub-folders containing more than 
 
 # How do I use this script?
 There are two items that need to be edited before you can run the script for the first time:
-
+- 
+- 
 
 # Is this safe to use?
-I have tested this myself and did not experience any negative side effects.  However, you should proceed with caution.
+I have tested this myself and did not experience any negative side effects.  However, this script does leave the possibility for something to go wrong and you should proceed with caution.  I shall not be liable for any negative side effects caused by this script.  Run it at your own risk!
