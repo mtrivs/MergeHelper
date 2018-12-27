@@ -13,7 +13,7 @@
 #                  |--Some Other Game(USA)/
 #
 # NOTE: This variable should not end with a forward slash "/"
-games="/roms/MyGames"
+GAMEROOT="/roms/MyGames"
 #
 # Set the location of the binmerge python file
 # Download this from https://github.com/putnam/binmerge
@@ -22,51 +22,55 @@ binmerge="/root/binmerge.py"
 # ___________________________
 #count=0
 echo "MergeHelper 0.1!"
-for d in "$games"/* ; do
-        if [ -d "$d" ]; then
+for GAMEDIR in "$GAMEROOT"/* ; do
+        if [ -d "$GAMEDIR" ]; then
                 # Determine if more than one bin file exists
-                numbin=(`find "$d" -maxdepth 1 -name "*.[bB][iI][nN]" | wc -l`)
+                numbin=(`find "$GAMEDIR" -maxdepth 1 -name "*.[bB][iI][nN]" | wc -l`)
 
                 # Determine the name of the game from the folder name
-                gamename=$(basename "$d")
+                gamename=$(basename "$GAMEDIR")
 
                 # Display the game name being processed
                 echo "Now processing: "$gamename""
                 # If there are two or more bin files, combine them
                 if [ "$numbin" -gt 1 ]; then
                         echo "....More than one .bin detected for "$gamename", attempting BinMerge!"
-                        cuename="$d/bkup/$gamename.cue"
+                        cuename="$GAMEDIR/bkup/$gamename.cue"
                         FAIL=0
-                        #echo "....game dir \"$d\""
-                        #echo "....game name \"$gamename\""
-                        #echo "....cue name \"$cuename\""
-                        #echo "....\"$d/bkup\""
-                        eval mkdir -p "\"$d/bkup\"" || FAIL=1
+                        # Make a backup ("bkup") directory inside the game directory or FAIL=1
+                        eval mkdir -p "\"$GAMEDIR/bkup\"" || FAIL=1
                         if [ "$FAIL" -lt 1 ]; then
+                                # No failure when creating bkup directory, now copy .bin/.cue files to backup directory
                                 echo "....Backing up original BIN/CUE files!"
-                                eval mv "\"$d\""/*.{[cC][uU][eE],[bB][iI][nN]} "\"$d\""/bkup/ || FAIL=1
+                                eval mv "\"$GAMEDIR\""/*.{[cC][uU][eE],[bB][iI][nN]} "\"$GAMEDIR\""/bkup/ || FAIL=1
                         else
+                                # Creation of the backup directory failed with nothing to cleanup. Skip game & continue processing other games
                                 echo "....Failed to create backup directory! Skipping file"
                                 continue
                         fi
                         if [ "$FAIL" -lt 1 ]; then
+                                # No failure when copying .bin/.cue to bkup.  Begin merging BIN/CUE files
                                 echo "....Merging BIN files!"
-                                eval /usr/bin/python3 "$binmerge" "\"$cuename\"" "\"$gamename\"" -o "\"$d\"/" || FAIL=1
+                                eval /usr/bin/python3 "$binmerge" "\"$cuename\"" "\"$gamename\"" -o "\"$GAMEDIR\"/" || FAIL=1
                         else
-                                echo "....Failed to make backup BIN/CUE files! Skipping file"
+                                # BIN/CUE file backup failed.  Skip game & continue processing other games.
+                                echo "....Failed to backup BIN/CUE files! Skipping file"
                                 continue
                         fi
                         if [ "$FAIL" -lt 1 ]; then
+                                # No failure in the conversion process.  Remove backup directory.
                                 echo "....BinMerge completed successfully!"
-                                eval rm -r "\"$d\""/bkup
+                                eval rm -r "\"$GAMEDIR\""/bkup
                         else
-                                echo "....Merge failed! Your original files are in a backup directory and will be copied back!"
-                                eval rm "\"$d\""/*.{[cC][uU][eE],[Bb][Ii][nN]} &> /dev/null
-                                eval mv "\"$d\""/bkup/*.{[cC][uU][eE],[Bb][Ii][nN]} "\"$d\"/" && eval rm -r "\"$d\""/bkup
+                                # Merge process failed.  Remove any partial files and restore BIN/CUE from backup
+                                echo "....Merge failed! Your original files are in a backup directory and are being copied back!"
+                                eval rm "\"$GAMEDIR\""/*.{[cC][uU][eE],[Bb][Ii][nN]} &> /dev/null
+                                eval mv "\"$GAMEDIR\""/bkup/*.{[cC][uU][eE],[Bb][Ii][nN]} "\"$GAMEDIR\"/" && eval rm -r "\"$GAMEDIR\""/bkup
                                 continue
                         fi
                 else
-                        echo "...."$gamename" doesn't need to be merged!"
+                       # Game folder only has 1 BIN file, so there is nothing to merge.
+                       echo "...."$gamename" doesn't need to be merged!"
                 fi
         fi
 done
