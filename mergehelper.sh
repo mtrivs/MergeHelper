@@ -35,9 +35,10 @@ for GAMEDIR in "$GAMEROOT"/* ; do
                 # Display the game name being processed
                 echo "Now processing: "$gamename""
                 # If there are two or more bin files, combine them
+                               
                 if [ "$numbin" -gt 1 ]; then
                         echo "....More than one .bin detected for "$gamename", attempting BinMerge!" | indent
-                        cuename="$GAMEDIR/bkup/$gamename.cue"
+                        cuename=('find "$GAMEDIR" -maxdepth 1 -type f -name "*.[cC][uU][eE]" -exec basename {} \;')
                         FAIL=0
                         # Make a backup ("bkup") directory inside the game directory or FAIL=1
                         eval mkdir -p "\"$GAMEDIR/bkup\"" | indent || FAIL=1
