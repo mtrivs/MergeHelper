@@ -18,8 +18,9 @@ In order for this script to work correctly, each game must be in its own directo
 This script will search a directory and detect sub-folders containing more than one BIN file.   If more than one BIN file is detected, the original BIN files will be moved to a ./bkup folder wherever the game folder exists.   The script will then execute the Python script BinMerge, to combine the multiple BIN files into a single BIN/CUE file.    If the merge process is successful, the original files will be removed, leaving only the combined BIN/CUE files in your game folder.  If there is a problem with making a backup of your files before the merge process kicks off, the script will skip that file and continue processing other titles.   
 
 ## How do I use this script?
-There are some items that need to be edited before you can run the script for the first time:
-- 
+There are some items that need to be edited before you can run the script for the first time
+
+-
 - 
 
 ## Is this safe to use?
