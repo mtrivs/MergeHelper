@@ -32,7 +32,7 @@ echo "*********** MergeHelper v0.5! ************"
 echo "******************************************"
 for GAMEDIR in "$GAMEROOT"/* ; do
         if [ -d "$GAMEDIR" ]; then
-                # Determine the number of BIN file inside Game directory
+                # Determine the number of BIN files inside Game directory
                 numbin=(`find "$GAMEDIR" -maxdepth 1 -name "*.[bB][iI][nN]" | wc -l`)
 
                 # Determine the name of the game from the folder name
