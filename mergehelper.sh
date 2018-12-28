@@ -1,36 +1,83 @@
 #!/bin/bash
-# MergeHelper - Batch convert multi-track disc images to a single bin/cue file
+# MergeHelper by mtrivs
+# Batch helper to convert multi-track disc images to a single BIN/CUE file using binmerge by @putnam (https://github.com/putnam/binmerge)
 #
-#   - Set the "GAMEROOT" directory to the root directory of your disc images.
-#   - Disc images should be in .bin/.cue format.
-#   - Each game should contain their disc images in it's own folder beneath the root games directory
-#     i.e., /home/mtrivs/MyGames/
-#              |-- Some Game (USA)
-#              |      |-- Some Game (USA) (Track 1).bin
-#              |      |-- Some Game (USA) (Track 2).bin
-#              |      |-- Some Game (USA).cue
-#              |-- Another Game (USA) (en, es, fr)
-#              |      |-- Another Game (USA) (en, es, fr) (Track 1).bin
-#              |      |-- Another Game (USA) (en, es, fr) (Track 2).bin
-#              |      |-- Another Game (USA) (en, es, fr).cue
+#   - Set the 'GAMEROOT' directory to the root directory of your disc images.
+#   - Disc images should be in BIN/CUE format.
+#   - Each game should contain disc images a separate folder beneath the root games directory
+#   - Example:
+#   /home/mtrivs/MyGames/     <-----THIS directory should be your 'GAMEROOT' (without the forward slash '/')
+#              |--> Some Game (USA)/
+#              |      |--> Some Game (USA) (Track 1).bin
+#              |      |--> Some Game (USA) (Track 2).bin
+#              |      |--> Some Game (USA).cue
+#              |--> Another Game (USA) (en, es, fr)/
+#              |      |--> Another Game (USA) (en, es, fr) (Track 1).bin
+#              |      |--> Another Game (USA) (en, es, fr) (Track 2).bin
+#              |      |--> Another Game (USA) (en, es, fr).cue
+#              *
 #
-# NOTE: This variable should not end with a forward slash "/"
+# NOTE: This variable should not end with a forward slash '/'
 GAMEROOT="/root/games"
 #
-# Set the "binmerge" variable below to the location of the binmerge python file
-# Download this from https://github.com/putnam/binmerge
-binmerge="/root/binmerge.py"
-#
-# Set the "pydir" variable below to the location of your python3 executable
-# Download this with your distribution of choice and provide the absolute path
-pydir="/usr/bin/python3"
+# You can optionally set the 'PYDIR' variable below, to absolute location of your python executable
+# This must be python version 3!
+# If you do not set this variable, the script will call 'python3' by name
+PYDIR="python3"
 #
 # DO NOT EDIT BELOW THIS LINE
-# ___________________________
-echo "******************************************"
-echo "*********** MergeHelper v0.5! ************"
-echo "******************************************"
-for GAMEDIR in "$GAMEROOT"/* ; do
+# ____________________________________________________________________________________
+echo "*****************************************************"
+echo "~~~~~~~~~~~~~~~   MergeHelper v0.5  ~~~~~~~~~~~~~~~~~"
+echo "~~~~~~~~~~~~~~~    ~ by mtrivs ~    ~~~~~~~~~~~~~~~~~"
+echo "~~~~~~~~~~~~~~  Powered by binmerge  ~~~~~~~~~~~~~~~~"
+echo "*****************************************************"
+# Abort if Python version 3 is not installed
+"$PYDIR" --version &> /dev/null
+if [ $? -ne 0 ]; then
+        echo "ERROR: Python version 3 is required, but not found!"
+        echo "Try setting the PYDIR variable inside this script or installing it with your distribution's package manager"
+        echo "....Aborting!"
+        exit
+fi
+# Check if BinMerge.py already exists
+if [[ -f ./BinMerge.py  ]]; then
+        if [[ -x ./BinMerge.py ]]; then
+                echo "Dependency pre-check complelte.  Python3 installed and BinMerge.py downloaded!"
+        else
+                echo "BinMerge.py is not executable.  Attempting to change permissions!"
+                chmod +x ./BinMerge.py &> /dev/null
+                if [[ -x ./BinMerge.py ]]; then
+                        echo "Successfully modified permissions for BinMerge.py!"
+                        echo "Dependency pre-check complelte.  Python3 installed and BinMerge.py downloaded!"
+                else
+                        echo "ERROR: Unable to modify permissions for BinMerge.py!"
+                        echo "Correct this error and run the script again.....Aborting!"
+                        exit
+                fi
+        fi
+else
+        echo "BinMerge.py does not exist!  Attempting to download it from GitHub (URL: https://raw.githubusercontent.com/putnam/binmerge/master/binmerge)"
+        wget -O ./BinMerge.py https://raw.githubusercontent.com/putnam/binmerge/master/binmerge &> /dev/null
+        if [[ -f ./BinMerge.py  ]]; then
+                echo "Successfully downloaded BinMerge.py!"
+                chmod +x ./BinMerge.py
+                if [[ -x ./BinMerge.py ]]; then
+                        echo "Dependency pre-check complelte.  Python3 installed and BinMerge.py downloaded!"
+                else
+                        echo "ERROR: Unable to modify permissions of BinMerge.py!"
+                        echo "Correct this error and run the script again.....Aborting!"
+                        exit
+                fi
+        else
+                echo "ERROR: Unable to download BinMerge.py from GitHub!"
+                echo "Please try downloading the file manually, renaming it to "BinMerge.py", and place it"
+                echo "in the same directory as this script....Aborting!"
+                exit
+        fi
+fi
+# Loop through all sub-directories of the GAMEROOT
+for GAMEDIR in  "$GAMEROOT"/* ; do
         if [ -d "$GAMEDIR" ]; then
                 # Determine the number of BIN files inside Game directory
                 numbin=(`find "$GAMEDIR" -maxdepth 1 -name "*.[bB][iI][nN]" | wc -l`)
@@ -73,7 +120,7 @@ for GAMEDIR in "$GAMEROOT"/* ; do
                         if [ "$FAIL" -lt 1 ]; then
                                 # No failure when copying .bin/.cue to bkup.  Begin merging BIN/CUE files
                                 echo "...Merging BIN files!"
-                                eval "$pydir" "$binmerge" "\"$cuename\"" "\"$gamename\"" -o "\"$GAMEDIR\"/" || FAIL=1
+                                eval "$PYDIR" ./BinMerge.py "\"$cuename\"" "\"$gamename\"" -o "\"$GAMEDIR\"/" || FAIL=1
                         else
                                 echo "...ERROR: Failed to backup BIN/CUE files! Skipping file"
                                 continue
@@ -90,8 +137,8 @@ for GAMEDIR in "$GAMEROOT"/* ; do
                                 continue
                         fi
                 else
-                       # Game folder only has 1 BIN file, so there is nothing to merge.
-                       echo "..."$gamename" doesn't need to be merged!"
+                        # Game folder only has 1 BIN file, so there is nothing to merge.
+                        echo "..."$gamename" doesn't need to be merged!"
                 fi
         fi
 done
