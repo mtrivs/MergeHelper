@@ -18,7 +18,7 @@
 #              *
 #
 # NOTE: This variable should not end with a forward slash '/'
-GAMEROOT="/root/games"
+GAMEROOT="/home/mtrivs/games"
 #
 # You can optionally set the 'PYDIR' variable below, to absolute location of your python executable
 # This must be python version 3!
@@ -100,7 +100,7 @@ for GAMEDIR in  "$GAMEROOT"/* ; do
                         cuecheck=(`find "$GAMEDIR" -maxdepth 1 -name "*.[cC][uU][eE]" | wc -l`)
                         # Make sure there is only 1 CUE file inside the game directory
                         if [ "$cuecheck" -eq 1 ]; then
-                                cuename=('find "$GAMEDIR" -maxdepth 1 -type f -name "*.[cC][uU][eE]" -exec basename {} \;')
+                                cuename=`find "$GAMEDIR" -maxdepth 1 -type f -name "*.[cC][uU][eE]" -exec basename {} \;`
                                 echo "...CUE file found: "$cuename""
                         else
                                 echo "...ERROR: No CUE file or too mand CUE files detected! Skipping merge for "$gamename"..."
@@ -120,7 +120,8 @@ for GAMEDIR in  "$GAMEROOT"/* ; do
                         if [ "$FAIL" -lt 1 ]; then
                                 # No failure when copying .bin/.cue to bkup.  Begin merging BIN/CUE files
                                 echo "...Merging BIN files!"
-                                eval "$PYDIR" ./BinMerge.py "\"$cuename\"" "\"$gamename\"" -o "\"$GAMEDIR\"/" || FAIL=1
+				cuename2=`find "$GAMEDIR"/bkup -maxdepth 1 -name "*.[cC][uU][eE]"`
+                                eval "$PYDIR" ./BinMerge.py "\"$cuename2\"" "\"$gamename\"" -o "\"$GAMEDIR\"/" || FAIL=1
                         else
                                 echo "...ERROR: Failed to backup BIN/CUE files! Skipping file"
                                 continue
@@ -132,8 +133,8 @@ for GAMEDIR in  "$GAMEROOT"/* ; do
                         else
                                 # Merge process failed. Uncomment below to remove any partial BIN/CUE files and restore original BIN/CUE from backup
                                 echo "...ERROR: Merge failed! Your original files are safe in a backup directory!"
-                                #eval rm "\"$GAMEDIR\""/*.{[cC][uU][eE],[Bb][Ii][nN]} &> /dev/null
-                                #eval mv "\"$GAMEDIR\""/bkup/*.{[cC][uU][eE],[Bb][Ii][nN]} "\"$GAMEDIR\"/" && eval rm -r "\"$GAMEDIR\""/bkup
+                                eval rm "\"$GAMEDIR\""/*.{[cC][uU][eE],[Bb][Ii][nN]} &> /dev/null
+                                eval mv "\"$GAMEDIR\""/bkup/*.{[cC][uU][eE],[Bb][Ii][nN]} "\"$GAMEDIR\"/" && eval rm -r "\"$GAMEDIR\""/bkup
                                 continue
                         fi
                 else
