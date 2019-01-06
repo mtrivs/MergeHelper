@@ -31,13 +31,6 @@
 # NOTE: This variable should not end with a forward slash '/'
 GAMEROOT="/home/mtrivs/games"
 
-# The 'REMOVEMODE' variable is used to determine if the original BIN/CUE files should be deleted after a successful merge operation.
-# The variable can be optionally modified to one of the following values:
-#REMOVEMODE="0" #: The script will not remove any original BIN/CUE files. Source files will be moved to a new 'orig' folder, created
-                  #  in the same directory as the BIN/CUE files
-#REMOVEMODE="1" #: The script to remove original BIN/CUE files, if the binmerge operation completes successfully
-REMOVEMODE="2"  #: [default] Prompt once before the script is executed and ask if original BIN/CUE files should be removed after being merged
-
 # Set the 'NAMEBY' variable to "cue" if you would like the game name determined by the CUE filename
 # By default, the name of the game folder containing the BIN/CUE files is used as the game name
 NAMEBY="folder"
@@ -46,6 +39,18 @@ NAMEBY="folder"
 # This must be python version 3!
 # If you do not set this variable, the script will call `python3` by name
 PYDIR="python3"
+  
+# By default the ORIGINAL milti-BIN files will be stored in a new "orig" folder and will NOT be deleted
+# If you uncomment line 164 below, the original BIN/CUE files will be deleted after a successful merge process
+
+# BELOW HAS NOT BEEN IMPLEMENTED YET
+# The 'REMOVEMODE' variable is used to determine if the original BIN/CUE files should be deleted after a successful merge operation.
+# The variable can be optionally modified to one of the following values:
+#REMOVEMODE="0" #: The script will not remove any original BIN/CUE files. Source files will be moved to a new 'orig' folder, created
+                  #  in the same directory as the BIN/CUE files
+#REMOVEMODE="1" #: The script to remove original BIN/CUE files, if the binmerge operation completes successfully
+REMOVEMODE="2"  #: [default] Prompt once before the script is executed and ask if original BIN/CUE files should be removed after being merged
+
 
 ##############################################################################################
 #     DO NOT EDIT BELOW THIS LINE
