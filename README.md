@@ -21,4 +21,4 @@ This script will search a directory and detect sub-folders containing more than 
 Edit the script and modify the directory which contains your game subfolders.   Additional options are available at the top of the script and can be edited to fit your needs.
 
 ## Is this safe to use?
-I have tested this myself and did not experience any negative side effects.  However, this script does leave the possibility for something to go wrong and you should proceed with caution.  I shall not be liable for any negative side effects caused by this script.  Run it at your own risk!
+I have tested this myself and did not experience any negative side effects.  However, this script does leave the possibility for something to go wrong and you should proceed with caution.  Although the script will leave your original BIN/CUE files intact, it would be best to perform this operation in small batches until you are comfortable with the result.  Proceed at your own risk!
