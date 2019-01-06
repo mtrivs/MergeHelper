@@ -41,7 +41,7 @@ NAMEBY="folder"
 PYDIR="python3"
   
 # By default the ORIGINAL milti-BIN files will be stored in a new "orig" folder and will NOT be deleted
-# If you uncomment line 164 below, the original BIN/CUE files will be deleted after a successful merge process
+# If you uncomment line 168 below, the original BIN/CUE files will be deleted after a successful merge process
 
 # BELOW HAS NOT BEEN IMPLEMENTED YET
 # The 'REMOVEMODE' variable is used to determine if the original BIN/CUE files should be deleted after a successful merge operation.
