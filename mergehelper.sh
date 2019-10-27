@@ -71,7 +71,7 @@ fi
 # Check if BinMerge.py already exists
 if [[ -f ./BinMerge.py  ]]; then
         if [[ -x ./BinMerge.py ]]; then
-                echo "Dependency pre-check complelte.  Python3 installed and BinMerge.py downloaded!"
+                echo "Dependency pre-check complete.  Python3 installed and BinMerge.py downloaded!"
         else
                 echo "BinMerge.py is not executable.  Attempting to change permissions!"
                 chmod +x ./BinMerge.py &> /dev/null
@@ -91,7 +91,7 @@ else
                 echo "Successfully downloaded BinMerge.py!"
                 chmod +x ./BinMerge.py
                 if [[ -x ./BinMerge.py ]]; then
-                        echo "Dependency pre-check complelte.  Python3 installed and BinMerge.py downloaded!"
+                        echo "Dependency pre-check complete.  Python3 installed and BinMerge.py downloaded!"
                 else
                         echo "ERROR: Unable to modify permissions of BinMerge.py!"
                         echo "Correct this error and run the script again.....Aborting!"
