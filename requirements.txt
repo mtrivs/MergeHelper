@@ -1,1 +1,1 @@
-git+git://github.com/putnam/binmerge@46834fe # List BinMerge as a dependency
+git+git://github.com/putnam/binmerge@master#egg=binmerge
