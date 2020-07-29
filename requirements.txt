@@ -1,1 +1,1 @@
-git+git://github.com/putnam/binmerge@46834fe327099e0fd51fa7a2e6683b964166a3d0 # List BinMerge as a dependency
+git+git://github.com/putnam/binmerge@46834fe # List BinMerge as a dependency
