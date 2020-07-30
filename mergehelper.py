@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env python3
 # 'MergeHelper v0.8' by mtrivs
 # Bash wrapper for binmerge to batch convert multi-track disc images to a single BIN/CUE pair
 # binmerge python script created by @putnam (https://github.com/putnam/binmerge)
