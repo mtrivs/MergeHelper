@@ -29,17 +29,12 @@
 ##############################################################################################
 # Set the 'GAMEROOT' directory to the root directory of your game folders.
 # NOTE: This variable should not end with a forward slash '/'
-GAMEROOT="/home/mtrivs/games"
+gameroot = "/home/mtrivs/games"
 
 # Set the 'NAMEBY' variable to "cue" if you would like the game name determined by the CUE filename
 # By default, the name of the game folder containing the BIN/CUE files is used as the game name
-NAMEBY="folder"
+nameby = "folder"
 
-# OPTIONAL: Set the 'PYDIR' variable below, to absolute location of your python executable.  May be required for certain configurations.
-# This must be python version 3!
-# If you do not set this variable, the script will call `python3` by name
-PYDIR="python3"
-  
 # By default the ORIGINAL milti-BIN files will be stored in a new "orig" folder and will NOT be deleted
 # If you uncomment line 168 below, the original BIN/CUE files will be deleted after a successful merge process
 
@@ -49,25 +44,22 @@ PYDIR="python3"
 #REMOVEMODE="0" #: The script will not remove any original BIN/CUE files. Source files will be moved to a new 'orig' folder, created
                   #  in the same directory as the BIN/CUE files
 #REMOVEMODE="1" #: The script to remove original BIN/CUE files, if the binmerge operation completes successfully
-REMOVEMODE="2"  #: [default] Prompt once before the script is executed and ask if original BIN/CUE files should be removed after being merged
+removemode = 2  #: [default] Prompt once before the script is executed and ask if original BIN/CUE files should be removed after being merged
 
 
 ##############################################################################################
 #     DO NOT EDIT BELOW THIS LINE
 ##############################################################################################
-echo "~~~~~~~~~~~~~~~   MergeHelper v0.5  ~~~~~~~~~~~~~~~~~"
-echo "~~~~~~~~~~~~~~~    - by mtrivs -    ~~~~~~~~~~~~~~~~~"
-echo "~~~~~~~~~~~~~~  Powered by binmerge  ~~~~~~~~~~~~~~~~"
+import sys
+print("~~~~~~~~~~~~~~~   MergeHelper v0.5  ~~~~~~~~~~~~~~~~~")
+print("~~~~~~~~~~~~~~~    - by mtrivs -    ~~~~~~~~~~~~~~~~~")
+print("~~~~~~~~~~~~~~  Powered by binmerge  ~~~~~~~~~~~~~~~~")
 
 # Abort if Python version 3 is not installed
-"$PYDIR" --version &> /dev/null
-if [ $? -ne 0 ]; then
-        echo "ERROR: Python version 3 is required, but not found!"
-        echo "Try setting the PYDIR variable inside this script or installing it with your distribution's package manager"
-        echo "....Aborting!"
-        exit 1
-fi
-
+if sys.version_info[0] != 3:
+        print("DEPENDENCY ERROR: Python version 3 is required, but not installed!")
+        print("....Aborting!")
+        sys.exit(1)
 # Check if BinMerge.py already exists
 if [[ -f ./BinMerge.py  ]]; then
         if [[ -x ./BinMerge.py ]]; then
