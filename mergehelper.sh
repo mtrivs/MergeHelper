@@ -60,8 +60,7 @@ echo "~~~~~~~~~~~~~~~    - by mtrivs -    ~~~~~~~~~~~~~~~~~"
 echo "~~~~~~~~~~~~~~  Powered by binmerge  ~~~~~~~~~~~~~~~~"
 
 # Abort if Python version 3 is not installed
-"$PYDIR" --version &> /dev/null
-if [ $? -ne 0 ]; then
+if ! "$PYDIR" --version &> /dev/null; then
         echo "ERROR: Python version 3 is required, but not found!"
         echo "Try setting the PYDIR variable inside this script or installing it with your distribution's package manager"
         echo "....Aborting!"
@@ -99,7 +98,7 @@ else
                 fi
         else
                 echo "ERROR: Unable to download BinMerge.py from GitHub!"
-                echo "Please try downloading the file manually, renaming it to "BinMerge.py", and place it"
+                echo "Please try downloading the file manually, renaming it to \"BinMerge.py\", and place it"
                 echo "in the same directory as this script....Aborting!"
                 exit 1
         fi
