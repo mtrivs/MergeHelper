@@ -55,7 +55,7 @@ In the provided example, the top-level directory is `/home/mtrivs/games/`. This 
 
 To use MergeHelper:
 
-1.  **Set the `GAMEROOT` Variable:** Edit the script and [modify the `GAMEROOT`](https://github.com/mtrivs/MergeHelper/blob/master/mergehelper.sh#L44) variable to point to the directory containing your game subfolders. To determine the `GAMEROOT` variable, look at the top-level directory that contains all your game subfolders.
+1.  **Set the `GAMEROOT` Variable:** Edit the script and [modify the `GAMEROOT`](https://github.com/mtrivs/MergeHelper/blob/master/mergehelper.sh#L32) variable to point to the directory containing your game subfolders. To determine the `GAMEROOT` variable, look at the top-level directory that contains all your game subfolders.
     
 2.  **Customize Additional Variables:** Customize any additional [variables](#vars) at the top of the script according to your requirements.
     
