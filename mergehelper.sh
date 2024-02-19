@@ -1,36 +1,24 @@
 #!/bin/bash
 # 'MergeHelper v1.0' by mtrivs
-# binmerge python script created by Chris Putnam (https://github.com/putnam/binmerge)
-#
+# 
 # This script facilitates batch conversion of multi-track disc images into a single BIN/CUE pair using the binmerge tool.
 # It searches for folders containing more than one BIN file and merges them based on the data from the CUE sheet.
 # The script will skip folders where no CUE files are present or if multiple CUE files are found in the same directory.
 # If a merge operation fails, the script cleans up by restoring the original files.
 #
-# Requirements:
-#   - Python 3 is required for binmerge to properly merge multi-track discs. Specify the Python 3 executable path in the PYDIR variable.
-#   - Adjust the user-configurable options below according to your configuration.
-#   - The root games directory should contain sub-folders for each disc, with each sub-folder containing BIN/CUE format files.
+#  Copyright (C) 2024 Mitch Trivison (https://github.com/mtrivs)
+#  binmerge python script created by Chris Putnam (https://github.com/putnam/binmerge)
 #
-#   - Example GAMEROOT directory structure:
-#   /home/mtrivs/games/                        # Set this directory as 'GAMEROOT' below (without the trailing forward slash '/')
-#              +-- Some Multi-Track Game (USA)/
-#              |      +-- Some Game (USA) (Track 1).bin
-#              |      +-- Some Game (USA) (Track 2).bin
-#              |      +-- Some Game (USA).cue
-#              |
-#              +-- Another Multi-Track Game (USA) (en, es, fr)/
-#              |      +-- Another Game (USA) (en, es, fr) (Track 1).bin
-#              |      +-- Another Game (USA) (en, es, fr) (Track 2).bin
-#              |      +-- Another Game (USA) (en, es, fr).cue
-#              |
-#              +-- Previously Merged Game (USA)/
-#                      +-- Previously Merged Game (USA).cue
-#                      +-- Previously Merged Game (USA).bin
-#                      +-- orig/                # See the 'REMOVEMODE' variable below
-#                            +-- Previously Merged Game (USA) (Track 1).bin
-#                            +-- Previously Merged Game (USA) (Track 2).bin
-#                            +-- Previously Merged Game (USA).cue
+#  This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+#  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License along with this program. if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#  Please report any bugs on GitHub: https://github.com/mtrivs/MergeHelper
 ##############################################################################################
 #                     START USER CONFIGURABLE VARIABLES
 ##############################################################################################
