@@ -19,126 +19,165 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 # Please report any bugs on GitHub: https://github.com/mtrivs/MergeHelper
+
 import os
 import sys
 import shutil
 import subprocess
 import time
+import logging
+import argparse
+import urllib.request
 
 ##############################################################################################
 # START USER CONFIGURABLE VARIABLES
 ##############################################################################################
 
-# The 'GAMEROOT' variable specifies the root directory containing disc folders.
-# Each game folder within the root directory should include .bin and .cue files needing to be merged.
-# This must be modified to match your folder structure prior to executing this script for the first time.
-GAMEROOT = "roms"
+# Root directory containing game folders with BIN/CUE files to be merged.
+DEFAULT_GAMEROOT = "roms"
 
-# The 'PYDIR' variable is used to specify the absolute path of your python binary.
-# This must be python version 3!
-PYDIR = "python3"
+# Path to the BinMerge.py script.
+DEFAULT_BINMERGE_PATH = "./BinMerge.py"
 
-# The 'NAMEBY' variable is used to specify how the filename of the merged BIN/CUE files is determined.
-# By default, the name of the folder containing BIN/CUE files is used as the name of the resulting merged files.
-# Options: "cue" or "folder"
-NAMEBY = "folder"
+# Path to the Python 3 binary.
+DEFAULT_PYDIR = "python3"
 
-# The 'REMOVEMODE' variable is used to determine if the original BIN/CUE files should be deleted after a successful merge operation.
-# Options: "0" (no removal), "1" (remove if successful), "2" (prompt user)
-REMOVEMODE = "2"
+# Determines how the merged BIN/CUE files are named: by folder name or CUE file name.
+DEFAULT_NAMEBY = "folder"
 
-# The 'LOGGING' variable is used to specify whether the script should log output to a mergehelper.log log file.
-LOGGING = True
+# Determines whether original files are deleted after a successful merge.
+# Options: "0" (no removal), "1" (remove if successful), "2" (prompt user).
+DEFAULT_REMOVEMODE = "2"
 
-# The 'VERBOSE_LOGGING' variable controls whether detailed logging is enabled.
-VERBOSE_LOGGING = True
+# Enables or disables logging to a file.
+DEFAULT_ENABLE_LOGGING = True
+
+# Enables or disables detailed logging for debugging purposes.
+DEFAULT_VERBOSE_LOGGING = True
 
 ##############################################################################################
 # END USER CONFIGURABLE VARIABLES
 ##############################################################################################
 
-# Colors for terminal output
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="MergeHelper Script")
+parser.add_argument("--gameroot", default=DEFAULT_GAMEROOT, help="Root directory containing game folders")
+parser.add_argument("--binmerge-path", default=DEFAULT_BINMERGE_PATH, help="Path to BinMerge.py script")
+parser.add_argument("--pydir", default=DEFAULT_PYDIR, help="Path to the Python 3 binary")
+parser.add_argument("--nameby", default=DEFAULT_NAMEBY, choices=["folder", "cue"], help="Naming method for merged files")
+parser.add_argument("--removemode", default=DEFAULT_REMOVEMODE, choices=["0", "1", "2"], help="File removal mode after merge Options: 0 - no removal, 1 - remove if successful, 2 - prompt user")
+parser.add_argument("--enable-logging", type=lambda x: x.lower() == "true", default=DEFAULT_ENABLE_LOGGING, help="Enable or disable logging to file")
+parser.add_argument("--verbose-logging", type=lambda x: x.lower() == "true", default=DEFAULT_VERBOSE_LOGGING, help="Enable or disable verbose logging")
+args = parser.parse_args()
+
+# Assign variables based on command-line arguments or defaults
+GAMEROOT = args.gameroot
+BINMERGE_PATH = args.binmerge_path
+PYDIR = args.pydir
+NAMEBY = args.nameby
+REMOVEMODE = args.removemode
+ENABLE_LOGGING = args.enable_logging
+VERBOSE_LOGGING = args.verbose_logging
+
+# Configure logging
+LOG_FILE = "mergehelper.log"
+LOG_FORMAT = "%(asctime)s | %(levelname)s | %(message)s"
+DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
+
+# ANSI color codes for log levels
 COLORS = {
-    "NOCOLOR": "\033[0m",
-    "RED": "\033[1;31m",
-    "GREEN": "\033[0;32m",
-    "ORANGE": "\033[0;33m",
-    "BLUE": "\033[0;34m",
-    "PURPLE": "\033[0;35m",
-    "CYAN": "\033[0;36m",
-    "LIGHTGRAY": "\033[0;37m",
-    "DARKGRAY": "\033[1;30m",
-    "LIGHTRED": "\033[1;31m",
-    "LIGHTGREEN": "\033[1;32m",
-    "YELLOW": "\033[1;33m",
-    "LIGHTBLUE": "\033[1;34m",
-    "LIGHTPURPLE": "\033[1;35m",
-    "LIGHTCYAN": "\033[1;36m",
-    "WHITE": "\033[1;37m",
+    "DEBUG": "\033[36m",  # Cyan
+    "INFO": "\033[32m",   # Green
+    "WARNING": "\033[33m",  # Yellow
+    "ERROR": "\033[31m",   # Red
+    "CRITICAL": "\033[41m",  # Red background
+    "RESET": "\033[0m"    # Reset to default
 }
 
-# Set the timestamp format for logging purposes
-TSTAMP = time.strftime("%Y-%m-%dT%H:%M:%S%:z")
+class ColorizedFormatter(logging.Formatter):
+    """Custom formatter to add colors to log levels."""
+    def format(self, record):
+        log_color = COLORS.get(record.levelname, COLORS["RESET"])
+        record.levelname = f"{log_color}{record.levelname}{COLORS['RESET']}"
+        return super().format(record)
 
-# Logging function for both coloring and logging
-def log(color, sev, message, writetolog):
-    """Function to print colorized script output and to a log file if LOGGING is True """
-    print(f"{COLORS[color]}{message}{COLORS['NOCOLOR']}")
-    if writetolog and LOGGING:
-        with open("mergehelper.log", "a", encoding="utf-8") as logfile:
-            logfile.write(f"{TSTAMP} | {sev} | {message}\n")
+# Create logger
+logger = logging.getLogger("MergeHelper")
+logger.setLevel(logging.DEBUG if VERBOSE_LOGGING else logging.INFO)
 
-# Functions for different log levels with optional log file writing
-def info(message, writetolog):
-    """Function calling the log function with info severity and green text"""
-    log("GREEN", "INFO", message, writetolog)
+# Create stream handler with colorized output
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.DEBUG)
+stream_handler.setFormatter(ColorizedFormatter("%(levelname)s: %(message)s"))
+logger.addHandler(stream_handler)
 
-def detail(message, writetolog):
-    """Function calling the log function with detail severity and cyan text"""
+# Conditionally add file handler based on ENABLE_LOGGING variable
+if ENABLE_LOGGING:
+    file_handler = logging.FileHandler(LOG_FILE, encoding="utf-8")
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT))
+    logger.addHandler(file_handler)
+
+# Logging helper functions for different log levels.
+def info(message, *args):
+    """Log an info message."""
+    logger.info(message, *args)
+
+def detail(message, *args):
+    """Log a debug message (used for verbose logging)."""
     if VERBOSE_LOGGING:
-        log("CYAN", "DETAIL", message, writetolog)
+        logger.debug(message, *args)
 
-def warn(message, writetolog):
-    """Function calling the log function with warn severity and yellow text"""
-    log("YELLOW", "WARN", message, writetolog)
+def warn(message, *args):
+    """Log a warning message."""
+    logger.warning(message, *args)
 
-def fail(message, writetolog):
-    """Function calling the log function with fail severity and red text"""
-    log("RED", "FAIL", message, writetolog)
+def fail(message, *args):
+    """Log an error message."""
+    logger.error(message, *args)
 
-# Define dependency check function
+# Function to check dependencies required by the script.
 def check_dependencies():
-    """Function check the dependencies used within the script"""
-    info(" ** BEGIN dependency pre-check ** ", True)
-    # Check Python version
+    """Ensure all required dependencies are available."""
+    info(" ** BEGIN dependency pre-check ** ")
+    
+    # Check Python version.
     if sys.version_info[0] < 3:
-        fail("   [-] This script requires Python 3 or later.", True)
+        fail("   [-] This script requires Python 3 or later.")
         sys.exit(1)
-    info("   [+] Python version check passed", True)
-    # Download BinMerge if it does not already exist.
-    if not os.path.exists("./BinMerge.py"):
-        try:
-            import urllib.request
-            import urllib.error
-        except ImportError as import_err:
-            fail(f"   [-] Failed to import the necessary modules: {import_err}", True)
-            sys.exit(1)
-        # Check if urllib.request is available
-        try:
-            urllib.request.urlopen("https://www.google.com", timeout=1)
-        except urllib.error.URLError as url_err:
-            fail(f"   [-] Unable to connect to the internet to check for urllib.request module availability. {url_err}", True)
-            sys.exit(1)
-        info("   [+] urllib.request module available", True)
-    info("   [+] BinMerge.py is available", True)
-    info(" ** FINISH Dependency pre-check ** ", True)
+    info("   [+] Python version check passed")
 
-info(" ", True)
-# Capture start time
+    # Ensure BinMerge.py exists or download it if missing.
+    if not os.path.exists(BINMERGE_PATH):
+        info("   [-] BinMerge.py not found at %s. Attempting to download...", BINMERGE_PATH)
+        try:
+            binmerge_url = "https://raw.githubusercontent.com/putnam/binmerge/main/BinMerge.py"
+            urllib.request.urlretrieve(binmerge_url, BINMERGE_PATH)
+            info("   [+] Successfully downloaded BinMerge.py to %s", BINMERGE_PATH)
+        except urllib.error.URLError as e:
+            fail("   [-] Failed to download BinMerge.py due to a URL error: %s", e)
+            sys.exit(1)
+        except OSError as e:
+            fail("   [-] Failed to download BinMerge.py due to an OS error: %s", e)
+            sys.exit(1)
+    else:
+        info("   [+] BinMerge.py is available")
+
+    info(" ** FINISH Dependency pre-check ** ")
+
+# Check dependencies before processing directories.
+try:
+    # Dependency check or other critical operation
+    check_dependencies()
+except (urllib.error.URLError, OSError) as e:
+    logger.error("Critical error: %s", e)
+    sys.exit(1)
+
+# Print script banner and initialize runtime tracking.
+info(" ")
 start_time = time.time()
-detail(f"Script started at: {TSTAMP}", True)
-print(f"""{COLORS['LIGHTPURPLE']}
-
+detail("Script started at: %s", time.strftime('%Y-%m-%dT%H:%M:%S%z'))
+print("""
         ███╗░░░███╗███████╗██████╗░░██████╗░███████╗██╗░░██╗███████╗██╗░░░░░██████╗░███████╗██████╗░
         ████╗░████║██╔════╝██╔══██╗██╔════╝░██╔════╝██║░░██║██╔════╝██║░░░░░██╔══██╗██╔════╝██╔══██╗
         ██╔████╔██║█████╗░░██████╔╝██║░░██╗░█████╗░░███████║█████╗░░██║░░░░░██████╔╝█████╗░░██████╔╝
@@ -148,9 +187,9 @@ print(f"""{COLORS['LIGHTPURPLE']}
 
                                     https://github.com/mtrivs/MergeHelper
                                             Powered by BinMerge!
-{COLORS['NOCOLOR']}""")
+""")
 
-# Check if user has selected whether to delete or save original game files
+# Handle user prompt for REMOVEMODE if not pre-configured.
 if REMOVEMODE == "2":
     info(
         "The REMOVEMODE variable has not been configured. This determines whether the original files are deleted after a successful merge operation. Edit the REMOVEMODE variable inside the script to disable this prompt.\n"
@@ -158,123 +197,105 @@ if REMOVEMODE == "2":
         "\tN     KEEP the original (non-merged) game files in the orig folder after the merge process has completed\n"
         "\tY     DELETE the original (non-merged) game files once the merge process has SUCCESSFULLY completed\n"
         "\tQ     QUIT the script\n"
-        "                ******  PROCEED CAREFULLY! DELETING GAME FILES CANNOT BE UNDONE ******", True)
+        "                ******  PROCEED CAREFULLY! DELETING GAME FILES CANNOT BE UNDONE ******")
     DELETEFILES = input(
         "Would you like to delete the original game files if the merge process is successful? [y/n/q]: ").lower()
     if DELETEFILES == 'y':
         REMOVEMODE = "1"
-        info("Deleting original multi-track files after successful merge operation", True)
+        info("Deleting original multi-track files after successful merge operation")
     elif DELETEFILES == 'n':
         REMOVEMODE = "2"
-        info("Original BIN/CUE files will be backed up to a new 'orig' folder prior to merge operations", True)
+        info("Original BIN/CUE files will be backed up to a new 'orig' folder prior to merge operations")
     elif DELETEFILES == 'q':
-        fail("User aborted script....", True)
+        fail("User aborted script....")
         sys.exit(1)
     else:
-        fail("Unknown response.  Run the script again and select a valid option", True)
+        fail("Unknown response.  Run the script again and select a valid option")
         sys.exit(1)
 
-# Check the dependencies of the script before going further
-check_dependencies()
 
-info(" ** BEGIN processing directories ** ", True)
-# Loop through all sub-directories of the GAMEROOT
+info(" ** BEGIN processing directories ** ")
+# Loop through all sub-directories of the GAMEROOT.
 for GAMEDIR in os.listdir(GAMEROOT):
     GAMEDIR = os.path.join(GAMEROOT, GAMEDIR)
     if os.path.isdir(GAMEDIR):
-        # Determine the number of BIN/CUE files inside Game directory
+        # Count BIN and CUE files in the directory.
         BINCOUNT = len([file for file in os.listdir(GAMEDIR) if file.lower().endswith(".bin")])
         CUECOUNT = len([file for file in os.listdir(GAMEDIR) if file.lower().endswith(".cue")])
 
         GAMENAME = os.path.basename(GAMEDIR)
 
-        # If a CUE file exists and the NAMEBY variable is set to `cue` above
+        # Use CUE file name for merged files if NAMEBY is set to "cue".
         if CUECOUNT == 1 and NAMEBY == "cue":
-            # Determine the name of the game from the CUE file name
             GAMENAME = [file for file in os.listdir(GAMEDIR) if file.lower().endswith(".cue")][0]
 
-        # Display the game name being processed
-        info(f"Now processing {GAMENAME}", True)
+        info("Now processing %s", GAMENAME)
 
-        # Check the number of BIN files
+        # Handle cases based on the number of BIN files.
         if BINCOUNT == 0:
-            # No BIN files found
-            fail(f"    └── No BIN found for {GAMENAME}", True)
+            fail("    └── No BIN found for %s", GAMENAME)
             continue
         elif BINCOUNT == 1:
-            # Game folder only has 1 BIN file, so there is nothing to merge.
-            warn(f"    └── No merge needed for {GAMENAME}", True)
+            warn("    └── No merge needed for %s", GAMENAME)
             continue
         elif BINCOUNT > 1:
-            info(f"    ├── Multiple BIN files found.  Attempting merge for {GAMENAME}", True)
+            info("    ├── Multiple BIN files found.  Attempting merge for %s", GAMENAME)
 
-            # Make sure there is only 1 CUE file inside the game directory
+            # Ensure only one CUE file exists in the directory.
             if CUECOUNT == 1:
                 CUENAME = [file for file in os.listdir(GAMEDIR) if file.lower().endswith(".cue")][0]
-                detail(f"    ├── Using CUE file: {GAMENAME}", True)
+                detail("    ├── Using CUE file: %s", GAMENAME)
             elif CUECOUNT > 1:
-                fail(f"Multiple CUE files found! Skipping merge for {GAMENAME}. Fix the issues with this folder and run the script again!", True)
+                fail("Multiple CUE files found! Skipping merge for %s. Fix the issues with this folder and run the script again!", GAMENAME)
                 continue
             else:
-                fail(f"No CUE file detected! Skipping merge for {GAMENAME}. Fix the issues with this folder and run the script again!", True)
+                fail("No CUE file detected! Skipping merge for %s. Fix the issues with this folder and run the script again!", GAMENAME)
                 continue
 
-            # Make a backup (orig) directory inside the game directory
+            # Create a backup directory for original files.
             orig_dir = os.path.join(GAMEDIR, 'orig')
             os.makedirs(orig_dir, exist_ok=True)
             if os.listdir(orig_dir):
-                fail(f"    └── Failed to create backup directory. Skipping file {GAMENAME}", True)
+                fail("    └── Failed to create backup directory. Skipping file %s", GAMENAME)
                 continue
 
-            # Backup original BIN/CUE files
+            # Backup original BIN/CUE files.
             try:
-                # Use glob to match multiple file extensions
                 cue_bin_files = [file for file in os.listdir(GAMEDIR) if file.lower().endswith(('.cue', '.bin'))]
                 for file in cue_bin_files:
                     shutil.move(os.path.join(GAMEDIR, file), orig_dir)
-                detail(f"    ├── Backing up original BIN/CUE files to {orig_dir}", True)
-            except shutil.Error as shutil_err:
-                fail(f"    └── Failed to backup BIN/CUE files! Skipping file {GAMENAME}. {shutil_err}", True)
-                continue
-            except FileNotFoundError as file_not_found_err:
-                fail(f"    └── Failed to find BIN/CUE files in {GAMEDIR}. Skipping file {GAMENAME}. {file_not_found_err}", True)
-                continue
-            except Exception as exc:
-                fail(f"    └── Failed to backup BIN/CUE files! Skipping file {GAMENAME}. {exc}", True)
+                detail("    ├── Backing up original BIN/CUE files to %s", orig_dir)
+            except OSError as exc:
+                fail("    └── Failed to backup BIN/CUE files! Skipping file %s. %s", GAMENAME, exc)
                 continue
 
-            # Begin merging BIN/CUE files
-            detail("    ├── Merging BIN files with BinMerge", True)
+            # Merge BIN/CUE files using BinMerge.
+            detail("    ├── Merging BIN files with BinMerge")
             new_cue = [file for file in os.listdir(orig_dir) if file.lower().endswith(".cue")][0]
             try:
-                merge_output = subprocess.check_output([PYDIR, "./BinMerge.py", new_cue, GAMENAME, "-o", GAMEDIR])
+                merge_output = subprocess.check_output([PYDIR, BINMERGE_PATH, new_cue, GAMENAME, "-o", GAMEDIR])
                 for line in merge_output.splitlines():
-                    detail(f"    ├────── {line[7:].decode('utf-8')}", True)
+                    detail("    ├────── %s", line[7:].decode('utf-8'))
                 if REMOVEMODE == "1":
-                    # Remove the original files
                     shutil.rmtree(orig_dir)
-                    detail("    ├── Original multi-track bin files removed!", True)
+                    detail("    ├── Original multi-track bin files removed!")
                 else:
-                    detail(f"    ├── Original multi-track files can be found in: ${orig_dir}", True)
-                info(f"    └── BinMerge completed successfully for {GAMENAME}", True)
+                    detail("    ├── Original multi-track files can be found in: %s", orig_dir)
+                info("    └── BinMerge completed successfully for %s", GAMENAME)
             except subprocess.CalledProcessError as e:
                 for line in e.output.splitlines():
-                    fail(f"    ├────── {line[7:].decode('utf-8')}", True)
-                fail("    └── Merge failed! Removing any partial BIN/CUE files and moving original files back!", True)
+                    fail("    ├────── %s", line[7:].decode('utf-8'))
+                fail("    └── Merge failed! Removing any partial BIN/CUE files and moving original files back!")
                 os.remove(os.path.join(GAMEDIR, "*.[cC][uU][eE],*.[bB][iI][nN]"))
                 shutil.move(os.path.join(orig_dir, "*.[cC][uU][eE],*.[bB][iI][nN]"), GAMEDIR)
                 os.rmdir(orig_dir)
 
-info(" ** FINISHED processing all directories ** ", True)
-# Capture end time
+info(" ** FINISHED processing all directories ** ")
+
+# Calculate and log script runtime.
 end_time = time.time()
-
-# Calculate runtime
 runtime_seconds = int(end_time - start_time)
-hours = runtime_seconds // 3600
-minutes = (runtime_seconds % 3600) // 60
-seconds = (runtime_seconds % 3600) % 60
-
-# Print runtime
-info(f"Script ended. Runtime: {hours:02d}:{minutes:02d}:{seconds:02d} (hh:mm:ss)", True)
-info(" ", True)
+hours, remainder = divmod(runtime_seconds, 3600)
+minutes, seconds = divmod(remainder, 60)
+logger.info("Script ended. Runtime: %02d:%02d:%02d (hh:mm:ss)", hours, minutes, seconds)
+info(" ")
