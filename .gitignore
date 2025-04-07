@@ -176,3 +176,6 @@ cython_debug/
 # BinMerge.py Script and mergehelper log file
 BinMerge.py
 mergehelper.log
+
+# Experimental unittest files
+unittest.py

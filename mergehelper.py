@@ -60,13 +60,69 @@ Enables or disables detailed logging for debugging purposes.
 # END USER CONFIGURABLE VARIABLES
 ##############################################################################################
 
+class Game:
+    """
+    Represents a game directory containing BIN/CUE files to be merged.
+
+    Attributes:
+        name (str): The name of the game, derived from the folder or CUE file.
+        directory (str): The path to the game directory.
+        cue_file (str): The path to the CUE file in the directory.
+        bin_count (int): The number of BIN files present in the directory.
+
+    Methods:
+        __repr__(): Returns a string representation of the Game object for debugging purposes.
+    """
+    def __init__(self, name, directory, cue_file, bin_count):
+        self.name = name  # Name of the game (folder or CUE-based)
+        self.directory = directory  # Path to the game directory
+        self.cue_file = cue_file  # Path to the CUE file
+        self.bin_count = bin_count  # Number of BIN files in the directory
+
+    def __repr__(self):
+        return f"Game(name={self.name}, directory={self.directory}, cue_file={self.cue_file}, bin_count={self.bin_count})"
+
+# Refactor to eliminate redundancy by reusing PaddedFormatter for both console and file handlers
+class PaddedFormatter(logging.Formatter):
+    """
+    A logging formatter that ensures consistent padding for log levels.
+
+    Attributes:
+        log_fixed_width (int): The fixed width for log level names to ensure alignment.
+    """
+    def format(self, record):
+        log_fixed_width = 8  # Fixed width for log levels
+        record.levelname = f"{record.levelname:<{log_fixed_width}}"  # Pad the log level
+        return super().format(record)
+
+class ColorizedFormatter(PaddedFormatter):
+    """
+    A logging formatter that applies colorization to log levels and messages for console output.
+
+    Inherits:
+        PaddedFormatter: Ensures consistent padding for log levels.
+
+    Methods:
+        format(record): Formats the log record with color codes for log levels and messages.
+    """
+    def format(self, record):
+        # Get the color for the log level
+        log_color = COLORS.get(record.levelname.strip(), COLORS["RESET"])
+
+        # Apply color to the log level and message, ensuring padding is applied after colorization
+        padded_levelname = f"{record.levelname.strip():<{8}}"  # Apply padding to the stripped level name
+        record.levelname = f"{log_color}{padded_levelname}{COLORS['RESET']}"
+        record.msg = f"{log_color}{record.msg}{COLORS['RESET']}"
+
+        return super().format(record)
+
 # Path and URL for binmerge script
 BINMERGE_URL = "https://raw.githubusercontent.com/putnam/binmerge/master/binmerge"
 BINMERGE_PATH = "./BinMerge.py"
 
 # Configure logging for console (colorized) and file (plain text)
 LOG_FILE = "mergehelper.log"
-LOG_FORMAT = "%(asctime)s | %(levelname)s | %(message)s"
+LOG_FORMAT = "%(asctime)s [%(levelname)s] %(message)s"
 DATE_FORMAT = "%m-%d-%Y %H:%M:%S"  # Updated to exclude milliseconds
 
 # ANSI color codes for log levels
@@ -79,38 +135,30 @@ COLORS = {
     "RESET": "\033[0m"    # Reset to default
 }
 
-class ColorizedFormatter(logging.Formatter):
-    """
-    Custom formatter to add colors to log levels and messages for console output.
-    """
-    def format(self, record):
-        log_color = COLORS.get(record.levelname, COLORS["RESET"])
-        levelname_colored = f"{log_color}{record.levelname}{COLORS['RESET']}"
-        record.levelname = levelname_colored
+# Determine the logging level based on VERBOSE_LOGGING
+LOG_LEVEL = logging.DEBUG if VERBOSE_LOGGING is True else logging.INFO
 
-        # Apply the same color to the message
-        record.msg = f"{log_color}{record.msg}{COLORS['RESET']}"
-        return super().format(record)
-
-# Create logger for console output (colorized)
-console_logger = logging.getLogger("ConsoleLogger")
-console_logger.setLevel(logging.DEBUG if VERBOSE_LOGGING else logging.INFO)
+# Create logger for console output (colorized) with consistent naming
+console_logger = logging.getLogger("console_logger")
+console_logger.setLevel(LOG_LEVEL)
 
 # Create stream handler with colorized output for console
 stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.DEBUG if VERBOSE_LOGGING else logging.INFO)
-stream_handler.setFormatter(ColorizedFormatter("%(levelname)s | %(message)s"))  # Colorized for console
+stream_handler.setLevel(LOG_LEVEL)
+stream_handler.setFormatter(ColorizedFormatter("[%(levelname)s] %(message)s"))  # Colorized for console
 console_logger.addHandler(stream_handler)
 
-# Create logger for file output (plain text)
-file_logger = logging.getLogger("FileLogger")
-file_logger.setLevel(logging.DEBUG)
-
-# Create file handler with plain text output for log file
+# Create logger for file output (plain text) only if logging is enabled
 if ENABLE_LOGGING:
+    file_logger = logging.getLogger("FileLogger")
+    file_logger.setLevel(logging.DEBUG)
+
+    # Create file handler with plain text output for log file
     file_handler = logging.FileHandler(LOG_FILE, encoding="utf-8")
-    file_handler.setLevel(logging.DEBUG if VERBOSE_LOGGING else logging.INFO)
-    file_handler.setFormatter(logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT))  # Plain text formatter for file
+    file_handler.setLevel(LOG_LEVEL)
+
+    # Update the file handler to use the PaddedFormatter
+    file_handler.setFormatter(PaddedFormatter(LOG_FORMAT, datefmt=DATE_FORMAT))
     file_logger.addHandler(file_handler)
 
 # Logging helper functions for different log levels.
@@ -152,7 +200,7 @@ def check_dependencies():
     """
     Ensure all required dependencies are available.
     """
-    info(" ** BEGIN dependency pre-check ** ")
+    info("*** BEGIN dependency pre-check ***")
     
     # Check Python version.
     if sys.version_info[0] < 3:
@@ -172,7 +220,21 @@ def check_dependencies():
     else:
         info("   [+] BinMerge script is available.")
 
-    info(" ** FINISH Dependency pre-check ** ")
+    info("*** FINISH Dependency pre-check ***")
+
+def display_progress(current, total, bar_length=50):
+    """
+    Display a progress bar in the console.
+
+    Parameters:
+        current (int): The current progress count.
+        total (int): The total count for completion.
+        bar_length (int): The length of the progress bar (default is 50).
+    """
+    progress = current / total
+    block = int(bar_length * progress)
+    bar = "█" * block + "-" * (bar_length - block)
+    info(f"Progress: |{bar}| {current}/{total} ({progress * 100:.2f}%)")
 
 def merge_bin_files(orig_dir, GAMEDIR, GAMENAME, REMOVEMODE):
     """
@@ -187,17 +249,32 @@ def merge_bin_files(orig_dir, GAMEDIR, GAMENAME, REMOVEMODE):
         # Log the output filename for clarity
         detail("    ├── Merging files with output name: %s", GAMENAME)
 
-        # Stream binmerge output in real-time using subprocess
-        command = ["python3", BINMERGE_PATH, cue_file_path, GAMENAME, "-o", GAMEDIR]
-        detail("    ├── Executing command: %s", " ".join(command))
+        # Adjust command based on VERBOSE_LOGGING
+        if VERBOSE_LOGGING:
+            command = ["python3", "-u", BINMERGE_PATH, cue_file_path, GAMENAME, "-o", GAMEDIR, "-v"]
+        else:
+            command = ["python3", "-u", BINMERGE_PATH, cue_file_path, GAMENAME, "-o", GAMEDIR]
 
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        detail("    ├── Executing command:")
+        detail("    ├──── %s", " ".join(command))
+
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, env={**os.environ, "PYTHONUNBUFFERED": "1"})
 
         # Capture and log stdout and stderr in real-time
         for line in process.stdout:
-            detail("    ├────── %s", line.strip())
+            # Strip any leading/trailing whitespace and the existing lognames from binmerge
+            stripped_line = line[7:].strip() 
+            if VERBOSE_LOGGING:
+                detail("    ├────── %s", stripped_line)
+            else:
+                info("    ├────── %s", stripped_line)
+            sys.stdout.flush()  # Ensure real-time rendering
+
         for line in process.stderr:
-            fail("    ├────── %s", line.strip())
+            # Strip any leading/trailing whitespace and the existing lognames from binmerge
+            stripped_line = line[7:].strip() 
+            fail("    ├────── %s", stripped_line)
+            sys.stderr.flush()  # Ensure real-time rendering
 
         process.wait()
         if process.returncode != 0:
@@ -207,8 +284,12 @@ def merge_bin_files(orig_dir, GAMEDIR, GAMENAME, REMOVEMODE):
 
         # Handle file removal based on REMOVEMODE
         if REMOVEMODE == "1":
-            shutil.rmtree(orig_dir)
-            info("    ├── Original multi-track bin files removed!")
+            try:
+                shutil.rmtree(orig_dir)
+                info("    ├── Original multi-track bin files removed!")
+            except Exception as e:
+                fail("    ├── Failed to remove original multi-track files: %s", e)
+                fail("    └── Original multi-track files can be found in backup directory")
         else:
             info("    ├── Original multi-track files can be found in backup directory")
 
@@ -236,87 +317,90 @@ def merge_bin_files(orig_dir, GAMEDIR, GAMENAME, REMOVEMODE):
         except OSError:
             fail("    └── Could not remove backup directory %s. It may not be empty.", orig_dir)
 
-def process_directories(GAMEROOT, NAMEBY, REMOVEMODE):
+def scan_directories(GAMEROOT, NAMEBY):
     """
-    Process all sub-directories in the GAMEROOT.
-
-    This function iterates through all sub-directories in the specified root directory (GAMEROOT),
-    identifies directories containing BIN and CUE files, and attempts to merge multi-track BIN files
-    into a single BIN/CUE pair using the binmerge module.
+    Scan all sub-directories in GAMEROOT and build a list of games to be merged.
 
     Parameters:
         GAMEROOT (str): The root directory containing game folders with BIN/CUE files.
         NAMEBY (str): Determines how the merged BIN/CUE files are named. Options:
                       - "folder": Use the folder name.
                       - "cue": Use the CUE file name.
-        REMOVEMODE (str): Specifies the behavior for handling original files after a successful merge.
-                          Options:
-                          - "0": No removal.
-                          - "1": Remove original files if the merge is successful.
-                          - "2": Prompt the user for action.
 
     Returns:
-        None: The function performs operations directly on the file system and logs the results.
+        list[Game]: A list of Game objects representing directories to be merged.
     """
-    info(" ** BEGIN processing directories ** ")
+    info("*** BEGIN scanning directories ***")
+    games_to_merge = []
     game_dirs = [entry for entry in os.scandir(GAMEROOT) if entry.is_dir()]
     for GAMEDIR in game_dirs:
         GAMEDIR = os.path.join(GAMEROOT, GAMEDIR)
         if os.path.isdir(GAMEDIR):
-            info("Now processing %s", os.path.basename(GAMEDIR))
             files_in_dir = os.listdir(GAMEDIR)
             BINCOUNT = len([file for file in files_in_dir if file.lower().endswith(".bin")])
             CUECOUNT = len([file for file in files_in_dir if file.lower().endswith(".cue")])
             if CUECOUNT == 1:
                 cue_files = [file for file in os.listdir(GAMEDIR) if file.lower().endswith(".cue")]
+                cue_file_path = os.path.join(GAMEDIR, cue_files[0])
                 if NAMEBY == "cue":
                     GAMENAME = os.path.splitext(cue_files[0])[0]  # Use CUE file name without extension
                 else:
                     GAMENAME = os.path.basename(GAMEDIR)  # Use folder name
             elif CUECOUNT > 1:
                 fail("    └── Multiple CUE files found in %s. Skipping merge.", GAMEDIR)
-                detail("    └── CUE files found: %s", [file for file in files_in_dir if file.lower().endswith(".cue")])
+                fail("    └── CUE files found: %s", [file for file in files_in_dir if file.lower().endswith(".cue")])
+                continue
+            else:
+                fail("    └── No CUE file found in %s. Skipping merge.", GAMEDIR)
                 continue
 
-
-
-            if BINCOUNT == 0:
-                fail("    └── No BIN found for %s", GAMENAME)
-                continue
+            if BINCOUNT > 1:
+                info("    ├── Game %s identified for merging.", GAMENAME)
+                games_to_merge.append(Game(GAMENAME, GAMEDIR, cue_file_path, BINCOUNT))
             elif BINCOUNT == 1:
-                warn("    └── No merge needed for %s", GAMENAME)
-                continue
-            elif BINCOUNT > 1:
-                info("    ├── Multiple BIN files found.  Attempting merge for %s", GAMENAME)
-                detail("    ├── Output filename determined by %s: %s", NAMEBY, GAMENAME)
-                orig_dir = os.path.join(GAMEDIR, 'orig')
-                if os.path.exists(orig_dir) and os.listdir(orig_dir):
-                    fail("    └── Backup directory already exists and contains files. Skipping %s to avoid overwriting.", GAMEDIR)
-                    continue
-                os.makedirs(orig_dir, exist_ok=True)
-                try:
-                    cue_bin_files = [file for file in os.listdir(GAMEDIR) if file.lower().endswith(('.cue', '.bin'))]
-                except PermissionError as exc:
-                    fail("    └── Permission denied while accessing directory %s. Error: %s", GAMEDIR, exc)
-                    continue
-                except FileNotFoundError as exc:
-                    fail("    └── Directory %s not found. Error: %s", GAMEDIR, exc)
-                    continue
-                except Exception as exc:
-                    fail("    └── Failed to list files in directory %s. Error: %s", GAMEDIR, exc)
-                    continue
-                for file in cue_bin_files:
-                    try:
-                        shutil.move(os.path.join(GAMEDIR, file), orig_dir)
-                        detail("    ├── Moved file %s to backup directory %s", file, orig_dir)
-                    except OSError as exc:
-                        fail("    └── Failed to move file %s to backup directory. Skipping file. Error: %s", file, exc)
-                        continue
-                info("    ├── All original files moved to backup directory %s", orig_dir)
-                merge_bin_files(orig_dir, GAMEDIR, GAMENAME, REMOVEMODE)
+                detail("    ├── No merge needed for %s", GAMENAME)
+            else:
+                fail("    └── No BIN files found for %s", GAMENAME)
 
-    info(" ** FINISHED processing all directories ** ")
+    info("*** FINISHED scanning directories ***")
+    return games_to_merge
 
+# Update the process_games function to include the progress indicator
+def process_games(games, REMOVEMODE):
+    """
+    Process a list of games and merge their BIN/CUE files.
+
+    Parameters:
+        games (list[Game]): A list of Game objects to process.
+        REMOVEMODE (str): Specifies the behavior for handling original files after a successful merge.
+
+    Returns:
+        None
+    """
+    info("*** BEGIN merging games ***")
+    total_games = len(games)
+    display_progress(0, total_games)  # diaplay initial progress bar
+    for index, game in enumerate(games, start=1):
+        info("Now processing %s", game.name)
+        orig_dir = os.path.join(game.directory, 'orig')
+        if os.path.exists(orig_dir) and os.listdir(orig_dir):
+            fail("    └── Backup directory already exists and contains files. Skipping %s to avoid overwriting.", game.directory)
+            display_progress(index, total_games)  # Update progress bar
+            continue
+        os.makedirs(orig_dir, exist_ok=True)
+        try:
+            cue_bin_files = [file for file in os.listdir(game.directory) if file.lower().endswith(('.cue', '.bin'))]
+            for file in cue_bin_files:
+                shutil.move(os.path.join(game.directory, file), orig_dir)
+                detail("    ├── Moved file %s to backup directory %s", file, orig_dir)
+            info("    ├── All original files moved to backup directory %s", orig_dir)
+            merge_bin_files(orig_dir, game.directory, game.name, REMOVEMODE)
+        except Exception as exc:
+            fail("    └── Failed to process game %s. Error: %s", game.name, exc)
+            continue
+        finally:
+            display_progress(index, total_games)  # Update progress bar
+    info("*** FINISHED merging games ***")
 
 """
 Main function to execute the script logic.
@@ -330,7 +414,7 @@ except Exception as e:
 info(" ")
 start_time = time.time()
 detail("Script started at: %s", time.strftime('%m-%d-%Y %H:%M:%S'))
-info("""
+print("""\033[32m
     ███╗░░░███╗███████╗██████╗░░██████╗░███████╗██╗░░██╗███████╗██╗░░░░░██████╗░███████╗██████╗░
     ████╗░████║██╔════╝██╔══██╗██╔════╝░██╔════╝██║░░██║██╔════╝██║░░░░░██╔══██╗██╔════╝██╔══██╗
     ██╔████╔██║█████╗░░██████╔╝██║░░██╗░█████╗░░███████║█████╗░░██║░░░░░██████╔╝█████╗░░██████╔╝
@@ -340,7 +424,7 @@ info("""
 
                                 https://github.com/mtrivs/MergeHelper
                                         Powered by BinMerge!
-""")
+\033[0m""")
 
 if REMOVEMODE == "2":
     warn(
@@ -365,7 +449,8 @@ if REMOVEMODE == "2":
         fail("Unknown response.  Run the script again and select a valid option")
         sys.exit(1)
 
-process_directories(GAMEROOT, NAMEBY, REMOVEMODE)
+games_to_merge = scan_directories(GAMEROOT, NAMEBY)
+process_games(games_to_merge, REMOVEMODE)
 
 end_time = time.time()
 runtime_seconds = int(end_time - start_time)

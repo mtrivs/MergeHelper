@@ -1,20 +1,24 @@
-
 # MergeHelper
-MergeHelper is a bash helper script that uses the [binmerge](https://github.com/putnam/binmerge) Python script by [@Putnam](https://github.com/putnam) to batch convert multi-track BIN files to a single BIN/CUE pair. This is commonly needed for PSX disc images with multiple tracks and works great for ReDump sets, but can be used in other applications where a single BIN/CUE pair is desired.
+MergeHelper is a helper script that uses the [binmerge](https://github.com/putnam/binmerge) Python script by [@Putnam](https://github.com/putnam) to batch convert multi-track BIN files to a single BIN/CUE pair. This is commonly needed for PSX disc images with multiple tracks and works great for ReDump sets, but can be used in other applications where a single BIN/CUE pair is desired.
 
-Combining multiple bin files is often necessary for PlayStation (PSX) games due to the use of Compact Disc Digital Audio (CDDA) for audio tracks. Each audio track is typically stored as a separate audio track alongside the main data track to ensure proper synchronization with gameplay. Game data may also be split across multiple tracks for distribution, either due to size limitations or organizational considerations. When a disk containing multiple tracks is ripped, each track becomes a separate BIN file.  Merging these files into a single BIN/CUE pair simplifies management and usage. For emulation or preservation purposes, a unified representation ensures accuracy and compatibility across platforms. MergeHelper streamlines this process, facilitating the management and utilization of PSX disc images for various applications.
+MergeHelper is now available in two versions:
+1. **Bash Script (`mergehelper.sh`)**: Ideal for Linux/macOS users.
+2. **Python Script (`mergehelper.py`)**: A cross-platform version that works on Windows, Linux, and macOS.
+
+Combining multiple bin files is often necessary for PlayStation (PSX) games due to the use of Compact Disc Digital Audio (CDDA) for audio tracks. Each audio track is typically stored as a separate audio track alongside the main data track to ensure proper synchronization with gameplay. Game data may also be split across multiple tracks for distribution, either due to size limitations or organizational considerations. When a disk containing multiple tracks is ripped, each track becomes a separate BIN file. Merging these files into a single BIN/CUE pair simplifies management and usage. For emulation or preservation purposes, a unified representation ensures accuracy and compatibility across platforms. MergeHelper streamlines this process, facilitating the management and utilization of PSX disc images for various applications.
 
 ## Features
 - Detects sub-folders containing more than one BIN file and merges them into a single BIN/CUE pair.
 - Supports spaces and special characters in folder and file names.
 - Moves original BIN/CUE files to a new 'orig' folder before performing the merge operation.
-- Error handling to stop/revert processing upon errors (see [Safety Considerations](#safety) below)
-- Colorized terminal.
-- (optional) Removes original files after a successful merge, leaving only the combined BIN/CUE files.
-- (optional) Logs all output to file.
+- Error handling to stop/revert processing upon errors (see [Safety Considerations](#safety) below).
+- Colorized terminal output and detailed logging options.
+- **Python Version Only**: Cross-platform compatibility.
 
 ## Installation
 To use MergeHelper, follow these steps:
+
+### Bash Script Version
 1. Clone the MergeHelper repository to your local machine.
 2. Ensure Python3 and wget are installed on your system.
 3. Make the MergeHelper script executable using the following command:
@@ -22,6 +26,11 @@ To use MergeHelper, follow these steps:
    ```bash
    chmod +x mergehelper.sh
    ```
+
+### Python Script Version
+1. Clone the MergeHelper repository to your local machine.
+2. Ensure Python3 is installed on your system.
+
 
 ## Usage
 
@@ -52,9 +61,8 @@ To use MergeHelper, follow these steps:
 ```
 In the provided example, the top-level directory is `/home/mtrivs/games/`. This directory should be set as the value for the `GAMEROOT` variable in the MergeHelper script, without the trailing forward slash. Each game should be contained within its own subfolder within this directory. Correctly specifying this path enables MergeHelper to locate and process the game subfolders effectively.
 
-
 To use MergeHelper:
-
+### Bash Script Version
 1.  **Set the `GAMEROOT` Variable:** Edit the script and [modify the `GAMEROOT`](https://github.com/mtrivs/MergeHelper/blob/master/mergehelper.sh#L32) variable to point to the directory containing your game subfolders. To determine the `GAMEROOT` variable, look at the top-level directory that contains all your game subfolders.
     
 2.  **Customize Additional Variables:** Customize any additional [variables](#vars) at the top of the script according to your requirements.
@@ -64,7 +72,16 @@ To use MergeHelper:
    ```bash
    ./mergehelper.sh
    ```
-<a id="vars"></a> 
+
+### Python Script Version
+1. **Set the `GAMEROOT` Variable:** Open the `mergehelper.py` script and [modify the `GAMEROOT`](https://github.com/mtrivs/MergeHelper/blob/master/mergehelper.py#L30) variable to point to the directory containing your game subfolders.
+2. **Run the Script:** Execute the script using the following command in your terminal:
+
+   ```bash
+   python3 mergehelper.py
+   ```
+3. **Optional Arguments:** The Python version includes additional [variables](#vars) for logging and verbosity. These can be configured at the top of the script or you will be prompted to make any important selections by default.
+<a id="vars"></a>
 ## User Configurable Variables
 
 MergeHelper includes several user-configurable variables at the top of the script that allow you to customize its behavior:
@@ -72,7 +89,7 @@ MergeHelper includes several user-configurable variables at the top of the scrip
 | Variable          | Description                                                                                           | Default Value |
 | ----------------- | ----------------------------------------------------------------------------------------------------- | ------------- |
 | `GAMEROOT`        | Root directory containing game subfolders. Each subfolder should contain the BIN/CUE files to merge. | `roms`        |
-| `PYDIR`           | Absolute path of your Python 3 binary. By default the script assumes python3 is defined in the OS $PATH variable.                                                     | `python3`     |
+| `PYDIR`           | **Bash Version Only**: Absolute path of your Python 3 binary. By default the script assumes python3 is defined in the OS $PATH variable.                                                     | `python3`     |
 | `NAMEBY`          | Determines how the filename of the merged BIN/CUE files is determined.<br>&nbsp;&nbsp;Options: `"folder"`, `"cue"`. | `folder`      |
 | `REMOVEMODE`      | Specifies whether to delete original BIN/CUE files after a successful merge.<br>Options:<br>&nbsp;&nbsp;- `0`: The script will NOT remove any original BIN/CUE files. Source files will be moved to a new 'orig' folder, created in the same directory as the BIN/CUE files.<br>&nbsp;&nbsp;- `1`: The script will remove original BIN/CUE files only if the binmerge operation completes successfully.<br>&nbsp;&nbsp;- `2`: Prompt user at start to determine if original BIN/CUE files should be removed after successful merge operation. | `2`           |
 | `LOGGING`         | Specifies whether to log output to a file. A `mergehelper.log` file will be created with all script output included.<br>&nbsp;&nbsp;Options: `TRUE`, `FALSE`.                                 | `TRUE`        |
