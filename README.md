@@ -94,6 +94,7 @@ MergeHelper includes several user-configurable variables at the top of the scrip
 | `REMOVEMODE`      | Specifies whether to delete original BIN/CUE files after a successful merge.<br>Options:<br>&nbsp;&nbsp;- `0`: The script will NOT remove any original BIN/CUE files. Source files will be moved to a new 'orig' folder, created in the same directory as the BIN/CUE files.<br>&nbsp;&nbsp;- `1`: The script will remove original BIN/CUE files only if the binmerge operation completes successfully.<br>&nbsp;&nbsp;- `2`: Prompt user at start to determine if original BIN/CUE files should be removed after successful merge operation. | `2`           |
 | `LOGGING`         | Specifies whether to log output to a file. A `mergehelper.log` file will be created with all script output included.<br>&nbsp;&nbsp;Options: `TRUE`, `FALSE`.                                 | `TRUE`        |
 | `VERBOSE_LOGGING` | Controls whether detailed logging is enabled. This option can be useful for debugging purposes.<br>&nbsp;&nbsp;Options: `TRUE`, `FALSE`.                                | `TRUE`        |
+| `RECURSIVEMODE`   | Enables recursive scanning of subdirectories under `GAMEROOT` to locate BIN/CUE files for merging. This allows for more flexible folder structures but may slow down processing.<br>&nbsp;&nbsp;Options: `TRUE`, `FALSE`. | `FALSE`        |
 
 <a id="safety"></a>
 ## Safety Considerations
