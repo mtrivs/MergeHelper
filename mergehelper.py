@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-MergeHelper Script
+MergeHelper v1.5
 
 This script facilitates batch conversion of multi-track disc images into a single BIN/CUE pair using the binmerge tool.
 It recursively scans all subdirectories under the specified GAMEROOT directory to locate BIN/CUE files for merging.
