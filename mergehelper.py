@@ -1,5 +1,29 @@
 #!/usr/bin/env python3
 """
+MergeHelper Script
+
+This script facilitates batch conversion of multi-track disc images into a single BIN/CUE pair using the binmerge tool.
+It recursively scans all subdirectories under the specified GAMEROOT directory to locate BIN/CUE files for merging.
+
+Features:
+- Automatically detects and processes multi-track BIN/CUE files.
+- Recursively scans directories, eliminating the need for strict folder structures.
+- Handles errors gracefully, ensuring original files are restored in case of failure.
+- Provides detailed logging and progress tracking.
+
+Usage:
+- Set the GAMEROOT variable to the root directory containing game folders.
+- Configure other variables like NAMEBY and REMOVEMODE as needed.
+- Run the script to process and merge BIN/CUE files.
+
+Note:
+Recursive scanning is permanently enabled, simplifying directory handling.
+
+Author: Mitch Trivison (https://github.com/mtrivs)
+License: GNU General Public License v2.0 or later
+"""
+
+"""
 'MergeHelper v1.1' by mtrivs
 
 This script facilitates batch conversion of multi-track disc images into a single BIN/CUE pair using the binmerge tool.
@@ -27,14 +51,10 @@ import os, sys, shutil, time, logging, urllib.request, subprocess
 ##############################################################################################
 # START USER CONFIGURABLE VARIABLES
 ##############################################################################################
-GAMEROOT = r"/mnt/c/Users/mtriv/OneDrive/Documents/Scripts/MergeHelper/roms/roms"
+GAMEROOT = r"C:\Users\mtriv\OneDrive\Documents\Scripts\MergeHelper\roms\roms"
 """
 Root directory containing game folders with BIN/CUE files to be merged.
-"""
-
-NAMEBY = "folder"
-"""
-Determines how the merged BIN/CUE files are named: by folder name or CUE file name.
+The directory will be recursively scanned to locate all BIN/CUE files, including those in nested subdirectories.
 """
 
 REMOVEMODE = "2"
@@ -46,6 +66,11 @@ Options:
     "2" - prompt user
 """
 
+PYDIR = "python"
+"""
+Path to the Python interpreter. Default is "python" for Windows and "python3" for Linux/Mac.
+"""
+
 ENABLE_LOGGING = True
 """
 Enables or disables logging to a file.
@@ -54,11 +79,6 @@ Enables or disables logging to a file.
 VERBOSE_LOGGING = False
 """
 Enables or disables detailed logging for debugging purposes.
-"""
-
-RECURSIVEMODE = True
-"""
-If True, the script will parse CUE files to identify games and identify BIN files needing to be merged.  Slower process, but works for various folder structures.
 """
 
 ##############################################################################################
@@ -261,7 +281,7 @@ def merge_bin_files(game, REMOVEMODE):
         # Log the output filename for clarity
         detail("    ├── Merging files with output name: %s", game.name)
 
-        command = ["python3", "-u", BINMERGE_PATH, orig_cue_file, game.name, "-o", game.directory]
+        command = [PYDIR, "-u", BINMERGE_PATH, orig_cue_file, game.name, "-o", game.directory]
         if VERBOSE_LOGGING:
             command.append("-v")
         detail("    ├── Executing command:")
@@ -331,99 +351,65 @@ def merge_bin_files(game, REMOVEMODE):
             os.rmdir(orig_dir)
             detail("    ├── Removed empty backup directory %s", orig_dir)
 
-def scan_directories(GAMEROOT, NAMEBY):
+def scan_directories(GAMEROOT):
     """
     Scan all sub-directories in GAMEROOT and build a list of games to be merged.
 
     Parameters:
         GAMEROOT (str): The root directory containing game folders with BIN/CUE files.
-        NAMEBY (str): Determines how the merged BIN/CUE files are named. Options:
-                      - "folder": Use the folder name.
-                      - "cue": Use the CUE file name.
 
     Returns:
         list[Game]: A list of Game objects representing directories to be merged.
     """
     info("*** BEGIN scanning directories ***")
     games_to_merge = []
-    if RECURSIVEMODE:
-        info("    ├── Recursive mode enabled. Scanning all subdirectories under GAMEROOT.")
-        for root, dirs, files in os.walk(GAMEROOT):
-            # Filter CUE files in the current directory
-            cue_files = [file for file in files if file.lower().endswith(".cue")]
-            if not cue_files:
-                detail("    ├── No CUE files found in %s. Skipping.", root)
-                continue
+    info("    ├── Scanning all subdirectories under GAMEROOT.")
 
-            for cue_file in cue_files:
-                cue_file_path = os.path.join(root, cue_file)
-                try:
-                    # Parse the CUE file to extract referenced BIN files
-                    with open(cue_file_path, 'r', encoding='utf-8') as f:
-                        bin_files = []
-                        for line in f:
-                            if line.strip().upper().startswith("FILE"):
-                                try:
-                                    bin_name = line.split('"')[1]
-                                    bin_files.append(bin_name)
-                                except IndexError:
-                                    fail("    └── Malformed FILE entry in CUE file %s: %s", cue_file, line.strip())
-                                    continue
+    for root, dirs, files in os.walk(GAMEROOT):
+        # Filter CUE files in the current directory
+        cue_files = [file for file in files if file.lower().endswith(".cue")]
+        if not cue_files:
+            detail("    ├── No CUE files found in %s. Skipping.", root)
+            continue
 
-                    # Verify all referenced BIN files exist in the same directory
-                    missing_bins = [bin_file for bin_file in bin_files if not os.path.exists(os.path.join(root, bin_file))]
-                    if missing_bins:
-                        fail("    └── Missing BIN files referenced in %s: %s", cue_file, missing_bins)
-                        continue
+        for cue_file in cue_files:
+            cue_file_path = os.path.join(root, cue_file)
+            try:
+                # Parse the CUE file to extract referenced BIN files
+                with open(cue_file_path, 'r', encoding='utf-8') as f:
+                    bin_files = []
+                    for line in f:
+                        if line.strip().upper().startswith("FILE"):
+                            try:
+                                bin_name = line.split('"')[1]
+                                bin_files.append(bin_name)
+                            except IndexError:
+                                fail("    └── Malformed FILE entry in CUE file %s: %s", cue_file, line.strip())
+                                continue
 
-                    # Determine game name based on the cue file name without extension
-                    game_name = os.path.splitext(cue_file)[0] 
-
-                    # Count BIN files in the directory
-                    bin_count = len(bin_files)
-
-                    # Add the game to the list if it has multiple BIN files
-                    if bin_count > 1:
-                        info("    ├── Game %s identified for merging.", game_name)
-                        games_to_merge.append(Game(game_name, root, cue_file_path, bin_count, bin_files))
-                    elif bin_count == 1:
-                        detail("    ├── No merge needed for %s", game_name)
-                    else:
-                        fail("    └── No BIN files found for %s", game_name)
-
-                except Exception as e:
-                    fail("    └── Failed to process CUE file %s. Error: %s", cue_file, e)
-    else:
-        game_dirs = [entry for entry in os.scandir(GAMEROOT) if entry.is_dir()]
-        for GAMEDIR in game_dirs:
-            GAMEDIR = os.path.join(GAMEROOT, GAMEDIR)
-            if os.path.isdir(GAMEDIR):
-                files_in_dir = os.listdir(GAMEDIR)
-                BINCOUNT = len([file for file in files_in_dir if file.lower().endswith(".bin")])
-                CUECOUNT = len([file for file in files_in_dir if file.lower().endswith(".cue")])
-                if CUECOUNT == 1:
-                    cue_files = [file for file in os.listdir(GAMEDIR) if file.lower().endswith(".cue")]
-                    cue_file_path = os.path.join(GAMEDIR, cue_files[0])
-                    if NAMEBY == "cue":
-                        GAMENAME = os.path.splitext(cue_files[0])[0]  # Use CUE file name without extension
-                    else:
-                        GAMENAME = os.path.basename(GAMEDIR)  # Use folder name
-                elif CUECOUNT > 1:
-                    fail("    └── Multiple CUE files found in %s. Skipping merge.", GAMEDIR)
-                    fail("    └── CUE files found: %s", [file for file in files_in_dir if file.lower().endswith(".cue")])
-                    continue
-                else:
-                    fail("    └── No CUE file found in %s. Skipping merge.", GAMEDIR)
+                # Verify all referenced BIN files exist in the same directory
+                missing_bins = [bin_file for bin_file in bin_files if not os.path.exists(os.path.join(root, bin_file))]
+                if missing_bins:
+                    fail("    └── Missing BIN files referenced in %s: %s", cue_file, missing_bins)
                     continue
 
-                if BINCOUNT > 1:
-                    bin_files = [file for file in files_in_dir if file.lower().endswith(".bin")]
-                    info("    ├── Game %s identified for merging.", GAMENAME)
-                    games_to_merge.append(Game(GAMENAME, GAMEDIR, cue_file_path, BINCOUNT, bin_files))
-                elif BINCOUNT == 1:
-                    detail("    ├── No merge needed for %s", GAMENAME)
+                # Derive game name from the CUE file name without extension
+                game_name = os.path.splitext(cue_file)[0]
+
+                # Count BIN files in the directory
+                bin_count = len(bin_files)
+
+                # Add the game to the list if it has multiple BIN files
+                if bin_count > 1:
+                    info("    ├── Game %s identified for merging.", game_name)
+                    games_to_merge.append(Game(game_name, root, cue_file_path, bin_count, bin_files))
+                elif bin_count == 1:
+                    detail("    ├── No merge needed for %s", game_name)
                 else:
-                    fail("    └── No BIN files found for %s", GAMENAME)
+                    fail("    └── No BIN files found for %s", game_name)
+
+            except Exception as e:
+                fail("    └── Failed to process CUE file %s. Error: %s", cue_file, e)
     info("*** FINISHED scanning directories ***")
     return games_to_merge
 
@@ -441,14 +427,12 @@ def process_games(games, REMOVEMODE):
     for index, game in enumerate(games, start=1):
         info("Now processing %s", game.name)
         orig_dir = os.path.join(game.directory, "orig")
-        if os.path.exists(orig_dir) and os.listdir(orig_dir):
-            if not RECURSIVEMODE:
-                fail("    └── Backup directory already exists and contains files. Skipping %s to avoid overwriting.", game.directory)
-                display_progress(index, total_games)  # Update progress bar
-                continue
-            else:
-                info("    ├── Backup directory exists and contains files. Proceeding as RECURSIVEMODE is enabled.")
-        os.makedirs(orig_dir, exist_ok=True)
+        os.makedirs(orig_dir, exist_ok=True)  # Ensure the orig directory exists
+        conflicting_files = [file for file in game.bin_files + [os.path.basename(game.cue_file)] if os.path.exists(os.path.join(orig_dir, file))]
+        if conflicting_files:
+            fail("    └── Backup directory for %s contains conflicting files: %s. Skipping to avoid overwriting.", game.name, conflicting_files)
+            display_progress(index, total_games)  # Update progress bar
+            continue
         try:
             for file in game.bin_files + [os.path.basename(game.cue_file)]:
                 shutil.move(os.path.join(game.directory, file), orig_dir)
@@ -509,7 +493,7 @@ if REMOVEMODE == "2":
         fail("Unknown response.  Run the script again and select a valid option")
         sys.exit(1)
 
-games_to_merge = scan_directories(GAMEROOT, NAMEBY)
+games_to_merge = scan_directories(GAMEROOT)
 process_games(games_to_merge, REMOVEMODE)
 
 end_time = time.time()
