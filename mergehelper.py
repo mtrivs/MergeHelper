@@ -21,15 +21,6 @@ Recursive scanning is permanently enabled, simplifying directory handling.
 
 Author: Mitch Trivison (https://github.com/mtrivs)
 License: GNU General Public License v2.0 or later
-"""
-
-"""
-'MergeHelper v1.1' by mtrivs
-
-This script facilitates batch conversion of multi-track disc images into a single BIN/CUE pair using the binmerge tool.
-It searches for folders containing more than one BIN file and merges them based on the data from the CUE sheet.
-The script will skip folders where no CUE files are present or if multiple CUE files are found in the same directory.
-If a merge operation fails, the script cleans up by restoring the original files.
 
 Copyright (C) 2024 Mitch Trivison (https://github.com/mtrivs)
 binmerge python script created by Chris Putnam (https://github.com/putnam/binmerge)
@@ -51,7 +42,7 @@ import os, sys, shutil, time, logging, urllib.request, subprocess
 ##############################################################################################
 # START USER CONFIGURABLE VARIABLES
 ##############################################################################################
-GAMEROOT = r"C:\Users\mtriv\OneDrive\Documents\Scripts\MergeHelper\roms\roms"
+GAMEROOT = r"C:\roms"
 """
 Root directory containing game folders with BIN/CUE files to be merged.
 The directory will be recursively scanned to locate all BIN/CUE files, including those in nested subdirectories.
