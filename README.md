@@ -1,20 +1,20 @@
 # MergeHelper
 MergeHelper is a python helper script that uses the [binmerge](https://github.com/putnam/binmerge) Python script by [@Putnam](https://github.com/putnam) to batch convert multi-track BIN files to a single BIN/CUE pair. This is commonly needed for PSX disc images with multiple tracks and works great for ReDump sets, but can be used in other applications where a single BIN/CUE pair is desired.
-
 ## Features
-- Detects cue files containing more than one BIN file and merges them into a single BIN/CUE pair.
-- Supports spaces and special characters in folder and file names.
-- Moves original BIN/CUE files to a new 'orig' folder before performing the merge operation.
-- Error handling to stop/revert processing upon errors (see [Safety Considerations](#safety) below).
-- Colorized terminal output and detailed logging options.
-- Recursively scans directories under `GAMEROOT` to locate BIN/CUE files, even in nested subdirectories.
-- Cross platform!
+- Automatically detects CUE files referencing multiple BIN files and merges them into a single BIN/CUE pair.
+- Fully supports folder and file names containing spaces or special characters.
+- Creates a backup of original BIN/CUE files in a dedicated `orig` folder before performing merge operations.
+- Includes robust error handling to halt or revert processing in case of issues (refer to [Safety Considerations](#safety)).
+- Provides colorized terminal output for better readability and detailed logging options for troubleshooting.
+- Recursively scans all subdirectories under `GAMEROOT` to locate BIN/CUE files, ensuring compatibility with complex folder structures.
+- Accurately parses CUE files to identify discs with multiple BIN files.
+- Designed for cross-platform compatibility, ensuring functionality on Windows, macOS, and Linux systems.
+
 
 ## Deprecation Notice
-The Bash version of MergeHelper is now deprecated in favor of the Python version. The Python script provides enhanced functionality, including recursive directory scanning, better error handling, and improved logging. Users are encouraged to transition to the Python version for future use. The instructions below focus on the Python version.
+The Bash version of MergeHelper has been deprecated in favor of the Python version. Since BinMerge itself is a Python script, the Bash version requires Python to function and lacks cross-platform compatibility. The Python version offers significant enhancements, including recursive directory scanning, robust error handling, and improved logging. Users are strongly encouraged to transition to the Python version for continued support and better functionality. The instructions provided below focus exclusively on the Python version.
 
 # Quick Start Guide
-
 Follow these steps to get started with MergeHelper:
 1. **Ensure Python is Installed**  
    Verify that Python 3 is installed on your system. If Python is not installed, download and install it from the [official Python website](https://www.python.org/downloads/).
@@ -53,10 +53,9 @@ Follow these steps to get started with MergeHelper:
 | `PYDIR`          | Directory where Python is installed, if not in the system PATH.            | `python3`                                                           |
 
 ## Usage
-
 ### Example Directory Structure
 ```
-/home/mtrivs/games/          # Set this directory as 'GAMEROOT'
+/home/mtrivs/games/          # Set this directory as the 'GAMEROOT'
 ├── Game A/
 │   ├── Game A (Track 1).bin
 │   ├── Game A (Track 2).bin
@@ -99,7 +98,6 @@ The script performs checks to detect and handle various error conditions gracefu
 **Disclaimer:** This script is provided as-is, without any warranty, express or implied. The author accepts no liability for any damages or issues arising from the use of this script. Users are advised to review and understand the script before running it and should proceed at their own risk.
 
 ## Troubleshooting
-
 If you encounter issues while using MergeHelper, follow these steps to diagnose and resolve the problem:
 
 1. **Verify Python Installation**  
@@ -117,7 +115,6 @@ If you encounter issues while using MergeHelper, follow these steps to diagnose 
 By following these steps, you should be able to identify and resolve most issues encountered while using MergeHelper.
 
 ## License
-
 MergeHelper is provided under the GNU General Public License (GPL) version 3.0 or later. See the [LICENSE](LICENSE) file for details.
 
 ![GPL Logo](https://www.gnu.org/graphics/gplv3-88x31.png)
